@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
+
+export const runtime = 'edge'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -49,14 +51,18 @@ export async function POST(req: NextRequest) {
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Unknown error'
-        controller.enqueue(encoder.encode(`\n\n[오류: ${msg}]`))
+        controller.enqueue(encoder.encode(`[오류: ${msg}]`))
       } finally {
         controller.close()
       }
     },
   })
 
-  return new NextResponse(stream, {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'X-Accel-Buffering': 'no',
+      'Cache-Control': 'no-cache',
+    },
   })
 }
