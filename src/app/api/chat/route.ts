@@ -1,68 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
-import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 export const maxDuration = 60
 
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!)
+
 export async function POST(req: NextRequest) {
-  const { messages, model } = await req.json()
+  const { messages } = await req.json()
 
   try {
-    if (model === 'claude') {
-      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
-      const response = await anthropic.messages.create({
-        model: 'claude-opus-4-6',
-        max_tokens: 2048,
-        stream: true,
-        messages,
-      })
+    // 마지막 메시지를 제외한 히스토리
+    const history = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.content }],
+    }))
 
-      const encoder = new TextEncoder()
-      const stream = new ReadableStream({
-        async start(controller) {
-          for await (const event of response) {
-            if (
-              event.type === 'content_block_delta' &&
-              event.delta.type === 'text_delta'
-            ) {
-              controller.enqueue(encoder.encode(event.delta.text))
-            }
-          }
-          controller.close()
-        },
-      })
+    const lastMessage = messages[messages.length - 1].content
 
-      return new Response(stream, {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      })
-    } else {
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    const chat = model.startChat({ history })
+    const result = await chat.sendMessageStream(lastMessage)
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        stream: true,
-        messages,
-      })
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        for await (const chunk of result.stream) {
+          const text = chunk.text()
+          if (text) controller.enqueue(encoder.encode(text))
+        }
+        controller.close()
+      },
+    })
 
-      const encoder = new TextEncoder()
-      const stream = new ReadableStream({
-        async start(controller) {
-          for await (const chunk of response) {
-            const text = chunk.choices[0]?.delta?.content || ''
-            if (text) controller.enqueue(encoder.encode(text))
-          }
-          controller.close()
-        },
-      })
-
-      return new Response(stream, {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      })
-    }
+    return new Response(stream, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error('Chat API error:', msg)
+    console.error('Gemini API error:', msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
