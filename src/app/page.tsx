@@ -32,25 +32,14 @@ export default function ChatPage() {
         body: JSON.stringify({ messages: newMessages }),
       })
 
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || '오류가 발생했습니다.')
-      }
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || '오류가 발생했습니다.')
 
-      const reader = res.body?.getReader()
-      const decoder = new TextDecoder()
-      if (!reader) return
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const text = decoder.decode(value)
-        setMessages(prev => {
-          const updated = [...prev]
-          updated[updated.length - 1].content += text
-          return updated
-        })
-      }
+      setMessages(prev => {
+        const updated = [...prev]
+        updated[updated.length - 1].content = data.text || ''
+        return updated
+      })
     } catch (err) {
       const msg = err instanceof Error ? err.message : '오류가 발생했습니다.'
       setMessages(prev => {
