@@ -127,7 +127,7 @@ ${weatherData}`
     const data = await res.json()
     const text = data.choices?.[0]?.message?.content || ''
 
-    return NextResponse.json({ text, _debug: debugInfo })
+    return NextResponse.json({ text, _debug: debugInfo, _msg: lastUserMsg, _detected: detected })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: msg }, { status: 500 })
