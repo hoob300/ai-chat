@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Google Gemini REST API 직접 호출
-  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:streamGenerateContent?alt=sse&key=${apiKey}`
 
   const contents = messages.map((m: { role: string; content: string }) => ({
     role: m.role === 'assistant' ? 'model' : 'user',
