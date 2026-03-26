@@ -16,5 +16,20 @@ export async function POST(req: NextRequest) {
     messages,
   })
 
-  return result.toTextStreamResponse()
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const text of result.textStream) {
+          controller.enqueue(encoder.encode(text))
+        }
+      } finally {
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  })
 }
