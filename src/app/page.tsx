@@ -81,7 +81,7 @@ export default function ChatPage() {
           </div>
           <div>
             <h1 className="font-bold text-gray-900">AI Chat</h1>
-            <p className="text-xs text-gray-500">Gemini 1.5 Flash</p>
+            <p className="text-xs text-gray-500">Groq · LLaMA 3.3 70B</p>
           </div>
         </div>
         {messages.length > 0 && (
@@ -103,7 +103,7 @@ export default function ChatPage() {
             </div>
             <div>
               <p className="font-bold text-gray-700 text-lg">무엇이든 물어보세요</p>
-              <p className="text-sm text-gray-400 mt-1">Gemini 1.5 Flash가 답변합니다</p>
+              <p className="text-sm text-gray-400 mt-1">Groq LLaMA 3.3 70B가 답변합니다</p>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-2 w-full max-w-sm">
               {['코드 작성해줘', '번역해줘', '내용 요약해줘', '아이디어 제안해줘'].map(q => (
