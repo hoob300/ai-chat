@@ -29,7 +29,7 @@ export default function ChatPage() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: newMessages, isWeather: /날씨|기온|온도|강수|흐림|맑음|비가|눈이|바람|weather|forecast|temperature/i.test(input.trim()) }),
       })
 
       const data = await res.json()

@@ -72,7 +72,7 @@ function isWeatherQuery(text: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  const { messages } = await req.json()
+  const { messages, isWeather } = await req.json()
 
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
@@ -85,23 +85,16 @@ export async function POST(req: NextRequest) {
 
     // 날씨 질문이면 실시간 데이터 주입
     let systemPrompt = '당신은 친절한 AI 어시스턴트입니다. 한국어로 답변해주세요.'
-    let debugInfo = ''
-    const detected = isWeatherQuery(lastUserMsg)
-    if (detected) {
+    if (isWeather || isWeatherQuery(lastUserMsg)) {
       const city = extractCity(lastUserMsg)
-      debugInfo = `[날씨감지:${city}]`
       const weatherData = await getWeather(city)
       if (weatherData) {
-        debugInfo += '[데이터OK]'
         systemPrompt = `당신은 친절한 AI 어시스턴트입니다. 한국어로 답변해주세요.
 아래는 방금 조회한 실시간 날씨 정보입니다. 이 데이터를 바탕으로 자연스럽게 답변하세요.
 
 ${weatherData}`
-      } else {
-        debugInfo += '[데이터실패]'
       }
     }
-    console.log('DEBUG:', debugInfo, '| msg:', lastUserMsg)
 
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -127,7 +120,7 @@ ${weatherData}`
     const data = await res.json()
     const text = data.choices?.[0]?.message?.content || ''
 
-    return NextResponse.json({ text, _debug: debugInfo, _msg: lastUserMsg, _detected: detected })
+    return NextResponse.json({ text })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: msg }, { status: 500 })
